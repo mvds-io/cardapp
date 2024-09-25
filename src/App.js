@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { X, Edit2, Check } from 'lucide-react';
 
-const DraggableCard = ({ id, heading, content, onDragStart, onDelete, onEdit, isEditable }) => {
+// Basic UI components
+const Card = ({ children, className, ...props }) => (
+  <div className={`border rounded-lg shadow ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const Input = ({ className, ...props }) => (
+  <input className={`border rounded px-2 py-1 ${className}`} {...props} />
+);
+
+const Button = ({ children, className, ...props }) => (
+  <button className={`bg-blue-500 text-white px-4 py-2 rounded ${className}`} {...props}>
+    {children}
+  </button>
+);
+
+// Icon components (simplified)
+const X = () => <span>✖</span>;
+const Edit2 = () => <span>✎</span>;
+const Check = () => <span>✓</span>;
+
+const DraggableCard = ({ id, heading, content, onDelete, onEdit, isEditable }) => {
   const [isEditingHeading, setIsEditingHeading] = useState(false);
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [editedHeading, setEditedHeading] = useState(heading);
@@ -36,7 +54,7 @@ const DraggableCard = ({ id, heading, content, onDragStart, onDelete, onEdit, is
   return (
     <Card
       ref={drag}
-      className={`m-1 w-60 inline-flex flex-col justify-between cursor-move bg-white shadow-md rounded-lg transition-shadow hover:shadow-lg overflow-hidden ${
+      className={`m-1 w-60 inline-flex flex-col justify-between cursor-move bg-white ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
@@ -45,14 +63,14 @@ const DraggableCard = ({ id, heading, content, onDragStart, onDelete, onEdit, is
           <Input
             value={editedHeading}
             onChange={(e) => setEditedHeading(e.target.value)}
-            className="text-sm font-bold mb-1"
+            className="text-sm font-bold mb-1 w-full"
           />
         ) : (
           <h3 className="text-sm font-bold truncate">{heading}</h3>
         )}
         {isEditable && (
-          <Button variant="ghost" size="icon" onClick={isEditingHeading ? handleSaveHeadingClick : handleEditHeadingClick}>
-            {isEditingHeading ? <Check className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+          <Button onClick={isEditingHeading ? handleSaveHeadingClick : handleEditHeadingClick}>
+            {isEditingHeading ? <Check /> : <Edit2 />}
           </Button>
         )}
       </div>
@@ -67,15 +85,15 @@ const DraggableCard = ({ id, heading, content, onDragStart, onDelete, onEdit, is
           <p className="text-sm overflow-hidden h-20">{content}</p>
         )}
         {isEditable && (
-          <Button variant="ghost" size="icon" onClick={isEditingContent ? handleSaveContentClick : handleEditContentClick}>
-            {isEditingContent ? <Check className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+          <Button onClick={isEditingContent ? handleSaveContentClick : handleEditContentClick}>
+            {isEditingContent ? <Check /> : <Edit2 />}
           </Button>
         )}
       </div>
       {isEditable && (
         <div className="flex justify-end p-2">
-          <Button variant="ghost" size="icon" onClick={onDelete}>
-            <X className="h-4 w-4" />
+          <Button onClick={onDelete}>
+            <X />
           </Button>
         </div>
       )}
@@ -96,7 +114,7 @@ const AreaContainer = ({ title, cards, onDrop, onDelete, onEdit }) => {
     >
       <h2 className="text-lg font-bold mb-4 p-4 bg-green-100">{title}</h2>
       <div className="flex flex-wrap p-4">
-        {cards.map((card, index) => (
+        {cards.map((card) => (
           <DraggableCard
             key={card.id}
             id={card.id}
