@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import './DraggableCardApp.css';
+import App from './App';
+
+
 
 // Basic UI components
 const Card = ({ children, className, ...props }) => (
@@ -25,19 +28,52 @@ const X = () => <span>✖</span>;
 const Edit2 = () => <span>✎</span>;
 const Check = () => <span>✓</span>;
 
-const DraggableCard = ({ id, heading, content, onDelete, onEdit, isEditable }) => {
+const DraggableCard = ({ id, index, heading, content, onDelete, onEdit, isEditable, moveCard }) => {
   const [isEditingHeading, setIsEditingHeading] = useState(false);
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [editedHeading, setEditedHeading] = useState(heading);
   const [editedContent, setEditedContent] = useState(content);
 
   const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'card',
-    item: { id },
+    type: 'CARD',
+    item: { id, index },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }));
+
+  const [, drop] = useDrop(() => ({
+    accept: 'CARD',
+    hover(item, monitor) {
+      if (!ref.current) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+      
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+      
+      moveCard(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    },
+  }));
+
+  const ref = React.useRef(null);
+  const dragDropRef = drag(drop(ref));
 
   const handleEditHeadingClick = () => setIsEditingHeading(true);
   const handleEditContentClick = () => setIsEditingContent(true);
@@ -54,7 +90,7 @@ const DraggableCard = ({ id, heading, content, onDelete, onEdit, isEditable }) =
 
   return (
     <Card
-      ref={drag}
+      ref={dragDropRef}
       className={`grid-item ${isDragging ? 'dragging' : ''}`}
     >
       <div className="card-header">
@@ -100,25 +136,29 @@ const DraggableCard = ({ id, heading, content, onDelete, onEdit, isEditable }) =
   );
 };
 
-const AreaContainer = ({ title, cards, onDrop, onDelete, onEdit }) => {
+const AreaContainer = ({ title, cards, onDrop, onDelete, onEdit, moveCard }) => {
   const [, drop] = useDrop(() => ({
-    accept: 'card',
-    drop: (item) => onDrop(item.id, title),
+    accept: 'CARD',
+    drop(item) {
+      onDrop(item.id, title);
+    },
   }));
 
   return (
     <div ref={drop} className="area-container">
       <h2 className="area-header">{title}</h2>
       <div className="area-content grid">
-        {cards.map((card) => (
+        {cards.map((card, index) => (
           <DraggableCard
             key={card.id}
             id={card.id}
+            index={index}
             heading={card.heading}
             content={card.content}
             onDelete={() => onDelete(card.id)}
             onEdit={(field, newValue) => onEdit(card.id, field, newValue)}
             isEditable={title === 'Unassigned'}
+            moveCard={(dragIndex, hoverIndex) => moveCard(title, dragIndex, hoverIndex)}
           />
         ))}
       </div>
@@ -204,6 +244,16 @@ const App = () => {
     });
   };
 
+  const moveCard = (areaName, dragIndex, hoverIndex) => {
+    setAreas(prevAreas => {
+      const newAreas = { ...prevAreas };
+      const dragCard = newAreas[areaName][dragIndex];
+      newAreas[areaName].splice(dragIndex, 1);
+      newAreas[areaName].splice(hoverIndex, 0, dragCard);
+      return newAreas;
+    });
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="container">
@@ -242,6 +292,7 @@ const App = () => {
             onDrop={handleDrop}
             onDelete={handleDeleteCard}
             onEdit={handleEditCard}
+            moveCard={moveCard}
           />
         ))}
       </div>
