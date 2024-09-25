@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import './DraggableCardApp.css';
 
 // Basic UI components
 const Card = ({ children, className, ...props }) => (
-  <div className={`border rounded-lg shadow ${className}`} {...props}>
+  <div className={`card ${className}`} {...props}>
     {children}
   </div>
 );
 
 const Input = ({ className, ...props }) => (
-  <input className={`border rounded px-2 py-1 ${className}`} {...props} />
+  <input className={`input ${className}`} {...props} />
 );
 
 const Button = ({ children, className, ...props }) => (
-  <button className={`bg-blue-500 text-white px-4 py-2 rounded ${className}`} {...props}>
+  <button className={`button ${className}`} {...props}>
     {children}
   </button>
 );
@@ -54,45 +55,43 @@ const DraggableCard = ({ id, heading, content, onDelete, onEdit, isEditable }) =
   return (
     <Card
       ref={drag}
-      className={`m-1 w-60 inline-flex flex-col justify-between cursor-move bg-white ${
-        isDragging ? 'opacity-50' : ''
-      }`}
+      className={`grid-item ${isDragging ? 'dragging' : ''}`}
     >
-      <div className="bg-blue-100 p-2">
+      <div className="card-header">
         {isEditingHeading ? (
           <Input
             value={editedHeading}
             onChange={(e) => setEditedHeading(e.target.value)}
-            className="text-sm font-bold mb-1 w-full"
+            className="mb-2"
           />
         ) : (
-          <h3 className="text-sm font-bold truncate">{heading}</h3>
+          <h3>{heading}</h3>
         )}
         {isEditable && (
-          <Button onClick={isEditingHeading ? handleSaveHeadingClick : handleEditHeadingClick}>
+          <Button className="button-icon" onClick={isEditingHeading ? handleSaveHeadingClick : handleEditHeadingClick}>
             {isEditingHeading ? <Check /> : <Edit2 />}
           </Button>
         )}
       </div>
-      <div className="p-2">
+      <div className="card-content">
         {isEditingContent ? (
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="text-sm w-full h-20 p-1 border rounded"
+            className="input mb-2"
           />
         ) : (
-          <p className="text-sm overflow-hidden h-20">{content}</p>
+          <p>{content}</p>
         )}
         {isEditable && (
-          <Button onClick={isEditingContent ? handleSaveContentClick : handleEditContentClick}>
+          <Button className="button-icon" onClick={isEditingContent ? handleSaveContentClick : handleEditContentClick}>
             {isEditingContent ? <Check /> : <Edit2 />}
           </Button>
         )}
       </div>
       {isEditable && (
-        <div className="flex justify-end p-2">
-          <Button onClick={onDelete}>
+        <div className="card-content">
+          <Button className="button-icon" onClick={onDelete}>
             <X />
           </Button>
         </div>
@@ -108,12 +107,9 @@ const AreaContainer = ({ title, cards, onDrop, onDelete, onEdit }) => {
   }));
 
   return (
-    <div
-      ref={drop}
-      className="w-full bg-white rounded-lg shadow-md min-h-[300px] mb-6 overflow-hidden"
-    >
-      <h2 className="text-lg font-bold mb-4 p-4 bg-green-100">{title}</h2>
-      <div className="flex flex-wrap p-4">
+    <div ref={drop} className="area-container">
+      <h2 className="area-header">{title}</h2>
+      <div className="area-content grid">
         {cards.map((card) => (
           <DraggableCard
             key={card.id}
@@ -192,7 +188,6 @@ const App = () => {
       const newAreas = { ...prevAreas };
       let movedCard;
 
-      // Find and remove the card from its original area
       for (const areaName in newAreas) {
         const cardIndex = newAreas[areaName].findIndex(card => card.id === cardId);
         if (cardIndex !== -1) {
@@ -201,7 +196,6 @@ const App = () => {
         }
       }
 
-      // Add the card to the target area
       if (movedCard) {
         newAreas[targetArea] = [...newAreas[targetArea], movedCard];
       }
@@ -212,53 +206,44 @@ const App = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
-        <div className="mb-6 bg-white p-4 rounded-lg shadow-md flex flex-wrap items-end">
-          <div className="w-full md:w-1/4 mb-2 md:mb-0 md:mr-2">
+      <div className="container">
+        <div className="card mb-2">
+          <div className="card-content">
             <Input
               type="text"
               value={newAreaName}
               onChange={handleNewAreaNameChange}
               placeholder="Enter new area name"
-              className="w-full"
+              className="mb-2"
             />
-          </div>
-          <div className="w-full md:w-1/4 mb-2 md:mb-0 md:mr-2">
             <Input
               type="text"
               value={inputHeading}
               onChange={handleInputHeadingChange}
               placeholder="Enter resource heading"
-              className="w-full"
+              className="mb-2"
             />
-          </div>
-          <div className="w-full md:w-1/4 mb-2 md:mb-0 md:mr-2">
             <Input
               type="text"
               value={inputContent}
               onChange={handleInputContentChange}
               placeholder="Enter resource content"
-              className="w-full"
+              className="mb-2"
             />
-          </div>
-          <div className="w-full md:w-auto">
-            <Button onClick={handleAddNewArea} className="mr-2 mb-2 md:mb-0">Add New Area</Button>
+            <Button onClick={handleAddNewArea} className="mr-2">Add New Area</Button>
             <Button onClick={handleAddResource}>Add Resource</Button>
           </div>
         </div>
-        <div className="flex flex-wrap -mx-3">
-          {Object.entries(areas).map(([areaName, cards]) => (
-            <div key={areaName} className="w-full px-3 mb-6">
-              <AreaContainer
-                title={areaName}
-                cards={cards}
-                onDrop={handleDrop}
-                onDelete={handleDeleteCard}
-                onEdit={handleEditCard}
-              />
-            </div>
-          ))}
-        </div>
+        {Object.entries(areas).map(([areaName, cards]) => (
+          <AreaContainer
+            key={areaName}
+            title={areaName}
+            cards={cards}
+            onDrop={handleDrop}
+            onDelete={handleDeleteCard}
+            onEdit={handleEditCard}
+          />
+        ))}
       </div>
     </DndProvider>
   );
